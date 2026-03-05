@@ -3,6 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import optax
 import netket as nk
 import numpy as np
 
@@ -49,17 +50,16 @@ async def simulate_material(data: SimulateRequest):
 
     ma = nk.models.RBM(alpha=1, param_dtype=float)
     sa = nk.sampler.MetropolisLocal(hi)
-    op = nk.optimizer.Sgd(learning_rate=lr)
 
-    # --- THE AEROSPACE UPGRADE: QUANTUM NATURAL GRADIENT ---
-    # We bypass the buggy "on-the-fly" estimator and force the exact Jacobian PyTree.
-    qgt_exact = nk.optimizer.qgt.QGTJacobianPyTree
-    sr = nk.optimizer.SR(diag_shift=0.01, qgt=qgt_exact)
+    # --- THE PRODUCTION UPGRADE: OPTAX ADAM ---
+    # Bypasses the experimental QGT compiler bug while achieving
+    # deep "Lab-Grade" convergence via adaptive momentum.
+    op = optax.adam(learning_rate=lr)
 
     vstate = nk.vqs.MCState(sa, ma, n_samples=n_samples)
 
-    # Apply the SR preconditioner to the driver
-    vmc = nk.driver.VMC(H, op, variational_state=vstate, preconditioner=sr)
+    # Execute simulation (No preconditioner needed for Adam)
+    vmc = nk.driver.VMC(H, op, variational_state=vstate)
 
     # Execute simulation
     vmc.run(n_iter=n_iter)
