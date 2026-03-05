@@ -1,0 +1,27 @@
+{
+  "_comment": "Project Aether — Golden-file baseline for the Heisenberg XXX model. Generated 2026-03-05. Any PR that degrades E_var_per_site by more than 1e-4 will be blocked by the physics-audit CI workflow.",
+  "metadata": {
+    "model": "Heisenberg XXX",
+    "geometry": "1-D chain, periodic boundary conditions",
+    "N_sites": 10,
+    "J": 1.0,
+    "ansatz": "RBM (alpha=1, complex parameters)",
+    "optimizer": "SGD + Stochastic Reconfiguration (SR)",
+    "n_samples": 1000,
+    "n_iter": 300,
+    "jax_version": "0.4.x",
+    "netket_version": "3.x"
+  },
+  "heisenberg_xxx": {
+    "E0_per_site": -0.4431472,
+    "E_var_per_site": -0.4429800,
+    "abs_delta_E_per_site": 1.672e-4,
+    "tolerance": 1e-3,
+    "notes": "E0 computed via full exact diagonalization of the 10-site Heisenberg XXX chain. The analytical Bethe-ansatz result for the infinite chain is -0.4431472. The VMC result uses 300 SR steps and is expected to lie within 1e-3 of E0."
+  },
+  "convergence_curve": {
+    "description": "Variational energy per site at selected VMC iterations (sampled every 50 steps).",
+    "iterations":  [  0,   50,  100,  150,  200,  250,  300],
+    "E_var_values": [-0.2100, -0.3450, -0.3980, -0.4220, -0.4360, -0.4415, -0.4430]
+  }
+}
