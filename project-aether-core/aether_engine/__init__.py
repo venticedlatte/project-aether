@@ -1,1 +1,1 @@
-from .core import simulate_material, SimulateRequest
+# Project Aether Engine — Precision Upgrade (Alpha 1.1)
