@@ -36,9 +36,9 @@ async def simulate_material(data: SimulateRequest):
     # --- PRECISION CONFIGURATION ---
     # 'lab' mode increases samples and iterations for scientific validity
     if data.precision == "lab":
-        n_samples = 2048
-        n_iter = 2000  # Scaled up for Adam convergence
-        lr = 0.01
+        n_samples = 4096  # Doubled to kill statistical noise
+        n_iter = 2000
+        lr = 0.002        # Lowered so Adam settles into the minimum
     else:
         n_samples = 512
         n_iter = 50
