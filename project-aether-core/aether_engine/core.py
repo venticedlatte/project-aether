@@ -48,8 +48,8 @@ async def simulate_material(data: SimulateRequest):
     hi = nk.hilbert.Spin(s=1/2, N=g.n_nodes)
     H = nk.operator.Ising(hilbert=hi, graph=g, h=1.0, J=data.interaction_strength)
 
-    # Doubling the hidden node density to map complex fluctuations
-    ma = nk.models.RBM(alpha=2, param_dtype=float)
+    # Unlocking complex weights for true quantum state representation
+    ma = nk.models.RBM(alpha=2, param_dtype=complex)
     sa = nk.sampler.MetropolisLocal(hi)
 
     # --- THE PRODUCTION UPGRADE: OPTAX ADAM ---
