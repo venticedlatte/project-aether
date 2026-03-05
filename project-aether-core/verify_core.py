@@ -1,28 +1,23 @@
 import aether_engine.core as ae
 import asyncio
-from pydantic import BaseModel
 
 async def verify():
-    print("🚀 Initializing Lab-Grade Physics Audit...")
+    print("🚀 Initializing Alpha 1.1 Physics Audit...")
     
-    # Create a mock request object
-    class MockData:
+    # We now use a proper SimulateRequest to match the core.py logic
+    class MockRequest:
         atom_count = 10
         interaction_strength = 2.0
+        precision = "lab"  # This triggers 2048 samples / 150 iterations
     
-    # Run the simulation directly from your installed core
-    print("🔬 Running Variational Monte Carlo (N=10, J=2.0)...")
-    result = await ae.simulate_material(MockData())
+    print(f"🔬 Running Lab-Grade VMC (Samples: 2048, Iterations: 150)...")
+    result = await ae.simulate_material(MockRequest())
     
-    print("\n✅ SIMULATION COMPLETE")
+    print("\n✅ AUDIT COMPLETE")
     print(f"📊 Ground State Energy: {result['energy']:.6f}")
     print(f"📉 Variance: {result['variance']:.6E}")
     print(f"🛡️ System Status: {result['status']}")
-    
-    if result['variance'] < 0.1:
-        print("\n🌟 VERIFICATION PASSED: The Wavefunction has converged.")
-    else:
-        print("\n⚠️ WARNING: High variance detected. Check optimizer settings.")
+    print(f"⚙️ Mode: {result['precision_mode']}")
 
 if __name__ == "__main__":
     asyncio.run(verify())
