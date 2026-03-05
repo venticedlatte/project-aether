@@ -51,8 +51,15 @@ async def simulate_material(data: SimulateRequest):
     sa = nk.sampler.MetropolisLocal(hi)
     op = nk.optimizer.Sgd(learning_rate=lr)
 
+    # --- THE AEROSPACE UPGRADE: QUANTUM NATURAL GRADIENT ---
+    # We bypass the buggy "on-the-fly" estimator and force the exact Jacobian PyTree.
+    qgt_exact = nk.optimizer.qgt.QGTJacobianPyTree
+    sr = nk.optimizer.SR(diag_shift=0.01, qgt=qgt_exact)
+
     vstate = nk.vqs.MCState(sa, ma, n_samples=n_samples)
-    vmc = nk.driver.VMC(H, op, variational_state=vstate)
+
+    # Apply the SR preconditioner to the driver
+    vmc = nk.driver.VMC(H, op, variational_state=vstate, preconditioner=sr)
 
     # Execute simulation
     vmc.run(n_iter=n_iter)
