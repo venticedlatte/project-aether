@@ -1,0 +1,137 @@
+name: Physics Audit
+
+on:
+  pull_request:
+    branches: ["main", "master"]
+
+permissions:
+  contents: read
+
+jobs:
+  physics-audit:
+    name: Physics Quality Control
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install jax[cpu] netket numpy scipy
+
+      # ------------------------------------------------------------------
+      # Unit Test 1 — Hermitian check
+      # The Hamiltonian H must satisfy H = H†.
+      # A non-Hermitian Hamiltonian would yield complex energies, which is
+      # unphysical. We require ‖H − H†‖_F < 1e-10.
+      # ------------------------------------------------------------------
+      - name: "Unit test: Hamiltonian is Hermitian (real-valued energy)"
+        run: |
+          python - <<'EOF'
+          import sys
+          import netket as nk
+          import numpy as np
+
+          J = 1.0
+          N = 10
+
+          graph = nk.graph.Chain(length=N, pbc=True)
+          hi = nk.hilbert.Spin(s=0.5, N=graph.n_nodes)
+          H = nk.operator.Heisenberg(hilbert=hi, graph=graph, J=J)
+
+          H_dense = H.to_dense()
+          hermitian_residual = np.linalg.norm(H_dense - H_dense.conj().T)
+
+          print(f"‖H − H†‖_F = {hermitian_residual:.2e}")
+
+          if hermitian_residual > 1e-10:
+              print(f"FAIL: Hamiltonian is not Hermitian (residual = {hermitian_residual:.2e})")
+              sys.exit(1)
+
+          eigenvalues = np.linalg.eigvalsh(H_dense)
+          max_imag = np.max(np.abs(np.imag(eigenvalues)))
+          print(f"Max |Im(E)| = {max_imag:.2e}")
+
+          if max_imag > 1e-10:
+              print(f"FAIL: Eigenvalues have non-negligible imaginary part (max = {max_imag:.2e})")
+              sys.exit(1)
+
+          print("PASS: Hamiltonian is Hermitian and all eigenvalues are real.")
+          EOF
+
+      # ------------------------------------------------------------------
+      # Consistency check — Variational Principle
+      # During a well-conditioned VMC optimisation the energy must not
+      # increase significantly between consecutive checkpoints.
+      # We verify that the energy curve stored in the golden file is
+      # monotonically non-increasing (allowing a small numerical tolerance).
+      # ------------------------------------------------------------------
+      - name: "Consistency check: energy never increases (Variational Principle)"
+        run: |
+          python - <<'EOF'
+          import sys
+          import json
+          from pathlib import Path
+
+          GOLDEN = Path("benchmarks/energy_convergence_data.json")
+          INCREASE_TOLERANCE = 1e-3   # allow at most this much upward fluctuation
+
+          with GOLDEN.open() as fh:
+              data = json.load(fh)
+
+          curve = data["convergence_curve"]["E_var_values"]
+          print("Convergence curve:", curve)
+
+          violations = []
+          for i in range(1, len(curve)):
+              delta = curve[i] - curve[i - 1]
+              if delta > INCREASE_TOLERANCE:
+                  violations.append((i, curve[i - 1], curve[i], delta))
+
+          if violations:
+              for idx, prev, curr, delta in violations:
+                  print(f"  FAIL at step {idx}: E went from {prev:.6f} to {curr:.6f} (+{delta:.2e})")
+              sys.exit(1)
+
+          print("PASS: Energy is non-increasing throughout optimisation (Variational Principle satisfied).")
+          EOF
+
+      # ------------------------------------------------------------------
+      # Golden-file sanity check
+      # Ensure the golden file's VMC energy is within tolerance of E0.
+      # ------------------------------------------------------------------
+      - name: "Sanity check: golden-file E_var within tolerance of E0"
+        run: |
+          python - <<'EOF'
+          import sys
+          import json
+          from pathlib import Path
+
+          GOLDEN = Path("benchmarks/energy_convergence_data.json")
+
+          with GOLDEN.open() as fh:
+              data = json.load(fh)
+
+          entry = data["heisenberg_xxx"]
+          E0    = entry["E0_per_site"]
+          E_var = entry["E_var_per_site"]
+          tol   = entry["tolerance"]
+          delta = abs(E_var - E0)
+
+          print(f"E0    / site = {E0:.8f}")
+          print(f"E_var / site = {E_var:.8f}")
+          print(f"|ΔE|         = {delta:.2e}  (tolerance = {tol:.2e})")
+
+          if delta > tol:
+              print("FAIL: golden-file energy exceeds tolerance.")
+              sys.exit(1)
+
+          print("PASS: golden-file energy is within tolerance.")
+          EOF
