@@ -26,7 +26,7 @@ async def simulate_material(data: SimulateRequest):
     L = data.atom_count
     
     if data.precision == "lab":
-        n_samples = 4096
+        n_samples = 16384  # Brute-force Monte Carlo density
         n_iter = 2000
         lr = optax.linear_schedule(init_value=0.01, end_value=0.0001, transition_steps=n_iter)
     else:
