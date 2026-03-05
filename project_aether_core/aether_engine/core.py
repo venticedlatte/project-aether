@@ -52,7 +52,6 @@ async def simulate_material(data: SimulateRequest):
     op = nk.optimizer.Sgd(learning_rate=lr)
 
     # --- THE AEROSPACE UPGRADE: QUANTUM NATURAL GRADIENT ---
-    # Calculates the Quantum Geometric Tensor to map the curved Hilbert space
     sr = nk.optimizer.SR(diag_shift=0.01)
 
     vstate = nk.vqs.MCState(sa, ma, n_samples=n_samples)
