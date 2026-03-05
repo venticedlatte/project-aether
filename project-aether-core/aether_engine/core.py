@@ -34,11 +34,11 @@ async def simulate_material(data: SimulateRequest):
     L = data.atom_count
 
     # --- PRECISION CONFIGURATION ---
-    # 'lab' mode increases samples and iterations for scientific validity
     if data.precision == "lab":
-        n_samples = 4096  # Doubled to kill statistical noise
+        n_samples = 4096
         n_iter = 2000
-        lr = 0.002        # Lowered so Adam settles into the minimum
+        # Cooling schedule: start at 0.01, decay to absolute zero (0.0001)
+        lr = optax.linear_schedule(init_value=0.01, end_value=0.0001, transition_steps=n_iter)
     else:
         n_samples = 512
         n_iter = 50
